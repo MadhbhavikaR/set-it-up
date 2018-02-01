@@ -1,0 +1,26 @@
+# Dockerfile to run Anvesak Container
+
+FROM node:9.3-alpine
+
+ARG version=0.13.0
+
+RUN set -xe && \
+	apk update && \
+	apk upgrade && \
+	apk add --no-cache tar curl wget ca-certificates && \ 
+	rm -rf /var/cache/apk/* && \
+	wget https://codeload.github.com/gilbitron/Raneto/tar.gz/${version} && \
+	mkdir -p /usr/raneto && \
+	tar -xvzf ${version} -C /usr/raneto --strip-components=1 && \
+	rm ${version} && \
+	rm -Rf /usr/raneto/test /usr/raneto/Dockerfile /usr/raneto/logo && \
+	cd /usr/raneto && \
+	apk del curl tar ca-certificates wget && \
+	npm install --production && \
+	./node_modules/gulp/bin/gulp.js
+
+WORKDIR /usr/raneto/app
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

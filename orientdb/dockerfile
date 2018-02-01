@@ -1,0 +1,31 @@
+# Dockerfile to run an OrientDB (Graph) Container
+
+FROM openjdk:8-jdk-alpine
+
+ARG version=2.2.18
+ARG md5=dc92356f8fc488208f3c5f272e418fb3
+ARG sha1=dc866f6b8be40eec43b71fbee3548ec8b2f423e6
+
+RUN set -xe && \
+    apk add --update tar curl && \
+    rm -rf /var/cache/apk/* && \
+    mkdir /orientdb && \
+    wget  http://central.maven.org/maven2/com/orientechnologies/orientdb-community/${version}/orientdb-community-${version}.tar.gz && \
+    echo "${md5} *orientdb-community-${version}.tar.gz" | md5sum -c - && \
+    echo "${sha1} *orientdb-community-${version}.tar.gz" | sha1sum -c - && \
+    tar -xvzf orientdb-community-${version}.tar.gz -C /orientdb --strip-components=1 && \
+    rm orientdb-community-${version}.tar.gz && \
+    rm -rf /orientdb/databases/* && \
+    apk del curl tar
+
+ENV PATH /orientdb/bin:$PATH
+
+VOLUME ["/orientdb/backup", "/orientdb/databases", "/orientdb/config"]
+
+COPY config/orientdb-server-config.xml /orientdb/config/orientdb-server-config.xml
+
+WORKDIR /orientdb
+
+EXPOSE 2424 2480
+
+CMD ["server.sh"]

@@ -1,0 +1,15 @@
+{
+    "baseFolder": "C:\\Storage\\Development\\Personal",
+    "pingServer": "google.com",
+    "pingPort": "80",
+    "checkout": [
+        {
+            "name": "set-it-up",
+            "url": "https://<user>:<password>@https://github.com/madhbhavikar/set-it-up.git",
+            "language": "docker",
+            "run": [
+                "git checkout --quiet alpha"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,149 @@
+version: "3"
+
+services:
+    #java:
+    #    build:
+    #        context: ./java/jre/.
+    #        args:
+    #            glibc_version: 2.26-r0
+    #            major_version: 8
+    #            minor_version: 151
+    #            java_build: b12
+    #            download_hash: e758a0de34e24606bca991d704f6dcbf
+    #    container_name: java
+    #    hostname: java
+
+    orientdb:
+        build:
+            context: ./orientdb/.
+            args:
+                version: 2.2.18
+                md5: dc92356f8fc488208f3c5f272e418fb3
+                sha1: dc866f6b8be40eec43b71fbee3548ec8b2f423e6
+        image: setitup_orientdb:orientdb_2.2.18-alpine_latest
+        container_name: orientdb
+        hostname: orientdb
+        volumes:
+            - ./docker-volumes/databases/orientdb:/orientdb/databases
+            - ./docker-volumes/logs/orientdb:/orientdb/log
+            - ./docker-volumes/backups/orientdb:/orientdb/backup
+        ports:
+            - "2424:2424"
+            - "2480:2480"
+
+    redis:
+        image: "redis:alpine"
+        container_name: redis
+        hostname: redis
+        volumes:
+            #- ./docker-volumes/databases/orientdb:/orientdb/databases
+            - ./docker-volumes/logs/redis:/var/log/redis
+        user: redis
+        command: sh -c "redis-server 2>&1 | tee -a /var/log/redis/redis.log"
+
+    elasticsearch:
+        image : elasticsearch:5.6.5-alpine
+        container_name: elasticsearch
+        hostname: elasticsearch
+        volumes:
+            - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+            - ./docker-volumes/databases/elasticsearch/data:/usr/share/elasticsearch/data
+            - ./docker-volumes/logs/elasticsearch:/var/log/elasticsearch
+        ports:
+            - "9200:9200"
+            - "9300:9300"
+        user: elasticsearch
+        command: sh -c "elasticsearch 2>&1 | tee -a /var/log/elasticsearch/elasticsearch.log"
+
+    nginx:
+        image: nginx:alpine
+        container_name : nginx
+        hostname: dev.xkit.co
+        volumes:
+            - ./nginx/config:/etc/nginx/conf.d
+            - ./docker-volumes/logs/nginx:/var/log/nginx
+        ports:
+            - "80:80"
+            - "443:443"
+
+    mongodb:
+        image : mongo:2.6.12
+        container_name: mongodb
+        hostname: mongodb
+        volumes:
+            - ./mongodb/config:/opt
+            - ./docker-volumes/databases/mongodb:/data/
+            - ./docker-volumes/logs/mongodb:/var/log/mongodb
+        ports:
+            - "27017:27017"
+        command : sh -c "/opt/bootstrap.sh && mongod --smallfiles 2>&1 | tee -a /var/log/mongodb/mongodb.log"
+
+    mysql:
+        image: mysql:5.7.19
+        container_name: mysql
+        hostname: mysql
+        volumes:
+            - ./docker-volumes/databases/mysql:/var/lib/mysql
+            - ./docker-volumes/logs/mysql:/var/log/mysql
+        ports:
+            - "3306:3306"
+        #user: mysql
+        #command: sh -c "mysqld 2>&1 | tee -a /var/log/mysql/mysql.log"
+        environment:
+            MYSQL_ROOT_PASSWORD: "root"
+
+    zookeeper:
+        image: wurstmeister/zookeeper
+        container_name: zookeeper
+        hostname: zookeeper
+        ports:
+            - "2181:2181"
+
+    kafka:
+        image: wurstmeister/kafka:0.10.0.1-1
+        container_name: kafka
+        hostname: kafka
+        #volumes:
+        #    - ./docker-volumes/databases/kafka:/kafka/kafka-logs-kafka/
+        ports:
+            - "9092:9092"
+        environment:
+            KAFKA_ADVERTISED_HOST_NAME: "kafka"
+            KAFKA_ADVERTISED_PORT: "9092"
+            KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+            KAFKA_CREATE_TOPICS: "sample:1:1"
+        depends_on:
+            - zookeeper
+
+    portainer:
+        image: portainer/portainer
+        container_name: portainer
+        hostname: portainer
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - ./docker-volumes/databases/portainer/data:/data
+        ports:
+            - "9101:9000"
+
+    anvesak:
+       build:
+           context: ./anvesak/.
+           args:
+               version: 0.13.0
+       image: setitup_anvesak:Raneto_0.13.0-node_9.3-alpine
+       container_name: anvesak
+       hostname: anvesak
+       volumes:
+       # ideally  this should be a different folder under cisco/anvesak
+           - /usr/raneto/node_modules
+           - /usr/raneto/themes/default/public/lib
+           - ./anvesak/config/config.js:/usr/raneto/example/config.default.js
+           - ./docker-volumes/databases/anvesak:/usr/raneto/example/content:rw
+           - ./docker-volumes/logs/anvesak/npm:/root/.npm/_logs
+           - ./docker-volumes/logs/anvesak:/var/log/raneto
+       ports:
+           - "3000:3000"
+       user: node
+       command: sh -c  "npm start 2>&1 | tee -a /var/log/raneto/anvesak.log"
+
+

@@ -1,0 +1,6 @@
+.idea/*
+.vscode/*
+docker-volumes/*
+tmp/*
+*.ipr
+*.iws
